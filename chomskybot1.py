@@ -4,7 +4,7 @@ import nltk
 import numpy
 import re
 from langdetect import detect_langs, detect, DetectorFactory
-from corpus import Corpus
+from corpus_test import Corpus
 from ngram import BasicNgram
 from discord.ext import commands
 from discord.utils import get
@@ -61,12 +61,12 @@ async def time(ctx):
 	now = datetime.datetime.now()
 	await ctx.send(now.strftime("%d-%m-%Y %H:%M:%S"))
 
-@bot.command(brief='Generate sentence using some Chomsky books as data.', description='Generate a random sentence using a 4gram of Chomsky\'s Understanding power and Language and Mind. Takes an integer as argument for the length of the sentence.')
-async def quote(ctx, w: int, s=''):
+@bot.command(brief='Generate sentence using some Chomsky books as data.', description='Generate a random sentence using a 4gram of Chomsky\'s Understanding power and Language and Mind. Takes optional an integer as argument for the min length of the sentence and/or and optional seed.')
+async def quote(ctx, w=0, s=''):
 	s = s.lower()
 	try:
-		s = c.sentgen(w, ngram, s)
-		await ctx.send(f"\"{s.capitalize()}.\" - Chomskybot")
+		s = c.sentgen(ngram, w, s)
+		await ctx.send(f"\"{c.quotify(s)}\" - Chomskybot")
 	except IndexError:
 		await ctx.send("I've never said that before.")
 	

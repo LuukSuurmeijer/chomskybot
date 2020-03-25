@@ -5,6 +5,7 @@
 import re
 import random
 import nltk
+import nltk.data
 import numpy
 from ngram import BasicNgram
 import matplotlib
@@ -44,9 +45,10 @@ class Corpus:
 		"""
 		# do lower case, replace newlines and remove everything that inst a word (i keep comma's and dots for readability)
 		self.rawdata = self.rawdata.lower()
-		self.rawdata = re.sub("(\n)+", " ", self.rawdata)
-		self.rawdata = re.sub(r"[^\w\s\,]","", self.rawdata)
+		#self.rawdata = re.sub("(\n)+", " ", self.rawdata)
+		self.rawdata = re.sub(r"[^\w\s\,\.]","", self.rawdata)
 		tokens = nltk.word_tokenize(self.rawdata)
+		tokens = [re.sub('[0-9]', '', token) for token in tokens]
 		return tokens
 
 	def freq(self):
@@ -73,31 +75,20 @@ class Corpus:
 			else:
 				tuples[(self.tokens[i], self.tokens[i+1])] = 1
 		return tuples
-			
 
-	def getplots(self, log = False):
-		"""
-		Generate loglog/linear plots of the frequency of the words in a corpus. Used for problem 1
-		"""
-		if log:
-			matplotlib.pyplot.loglog(sorted(self.frequency.values(), reverse = True))
-			matplotlib.pyplot.title(f"Log-Log plot of f(words) in {self._filename}")
-		else:
-			matplotlib.pyplot.plot(sorted(self.frequency.values(), reverse = True))
-			matplotlib.pyplot.title(f"Linear plot of f(words) in {self._filename}")
-
-		matplotlib.pyplot.show()
-
-	def sentgen(self, w, ngram, seed=''):
-		"""
-		Generate a sentence (with nltk.generate) with w amount of words based on an ngram of the corpus.
 		
-		Choose the first word by choosing randomly (or a seed), then generate a word based on the previous context.
-		the new word becomes part of the context for the next word
-		do until the string is w words long. Used for problem 2
 
+	def sentgen(self, ngram, w=0, seed=''):
 		"""
-
+		Generate a sentence (with nltk.generate) with minimum w amount of words based on an ngram of the corpus.
+		Sentence is generated until a period is predicted to retain fluency.
+	
+		"""
+		#if theres no minimum length, the minimum is the size of 1 context
+		#if w == 0:
+		#	w = ngram._n
+	
+		#if the user inputs a seed
 		if seed:
 			sent = seed.split(' ')
 			context = tuple(sent)
@@ -105,13 +96,27 @@ class Corpus:
 			context = random.choice(ngram.contexts())
 			sent = list(context)
 
-		for k in range(w-ngram._n+1):
-			nextword = ngram[context].generate()
+		#user can input minimum length of a sentence
+		#if a length w is inputted, function will generate until theres a period and it has already generated more words than the minimum
+		#otherwise w is the length of 1 context, so it will always have generated more than the minimum length
+
+		nextword = ngram[context].generate() #generate first new word
+		while ((nextword != '.') or (len(sent) <=w)): #both of these conditions must evaluate false to stop iterating
 			sent.append(nextword) 
 		#append the newly generated word to the context (for the next word), shake off the first word of the previous context.
 			context = tuple([x for x in context[1:]] + [nextword])
+			nextword = ngram[context].generate() #generate all the other words
+		sent.append(nextword) #append last word (=period)
 		return ' '.join(sent)
 	
+	def quotify(self, sentence): #format a string nicely with capitals and punctuation
+		sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle') 
+		sentences = sent_tokenizer.tokenize(sentence)
+		sentences = [sent.capitalize() for sent in sentences]
+		new = ' '.join(sentences)
+		final = re.sub(r'\ (?=,|\.)', '', new)
+		return final
+
 	def pmi(self, w1, w2):
 		"""
 		Calculate and return Pointwise Mutual Information (PMI) of a wordpair (consisting of (w1) and (w2)) according to the formula:
@@ -141,4 +146,14 @@ class Corpus:
 			pmi_values.append(((w1, w2), independence_value))
 		return pmi_values
 
+
+def main():
+	c = Corpus("chomskycorpus.txt")
+	ngram = BasicNgram(4, c.tokens)
+
+	s = c.sentgen(ngram, 20)
+	print(s)
+	print(c.quotify(s))
+if __name__ == '__main__':
+	main()
 
