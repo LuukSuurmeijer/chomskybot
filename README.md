@@ -1,2 +1,2 @@
 # chomskybot
-Discord bot named after our lord and saviour Chomsky for the LST discord server.
+A funny discord bot that can quote Chomsky using an n-gram language model! Implemented using NLTK and the discord API.
